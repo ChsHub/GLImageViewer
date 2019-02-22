@@ -1,11 +1,14 @@
+import ctypes
+import sys
+from logging import info
+
 import OpenGL.GL as gl
 import OpenGL.GLUT as glut
-import sys
-from utility.os_interface import read_file_data
 import numpy
 from numpy.lib.arraypad import np
-from numpy import int32
-import ctypes
+from utility.os_interface import read_file_data
+from utility.timer import Timer
+
 from src.transforms import perspective, translate, rotate
 
 
@@ -15,49 +18,47 @@ class Viewer:
     program = None
     phi, theta = 0, 0
 
-    def __init__(self, points, colors, scale, offset_x, offset_y, point_size, vertex_file, fragment_file, title, texture_image, width, height):
+    def __init__(self, points, colors, scale, gl_width, gl_height, vertex_file, fragment_file, title,
+                 texture_image, width, height):
 
-        self.point_count = len(points)
+        with Timer('INIT GL'):
+            self.point_count = len(points)
 
-        self._init_glut(title)
-        self.program = self._init_program(vertex_file, fragment_file)
+            self._init_glut(title)
+            self.program = self._init_program(vertex_file, fragment_file)
 
-        # read data
-        data = self._init_data(points, colors)
-        buffer = self._build_buffer(data)
-        self._bind_buffers(data, buffer)
-        print(gl.glGetError())
+            # read data
+            data = self._init_data(points, colors)
+            buffer = self._build_buffer(data)
+            self._bind_buffers(data, buffer)
+            info(gl.glGetError())
 
+            texture = gl.glGenTextures(1, 0)
+            info(gl.glGetError())
 
-        texture = gl.glGenTextures(1, 0)
-        print(gl.glGetError())
+            texture_image = numpy.array(texture_image, dtype=np.uint8)
+            texture_image.reshape((height, width, 3))
+            gl.glBindTexture(gl.GL_TEXTURE_2D, texture)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_MIRRORED_REPEAT)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_MIRRORED_REPEAT)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
+            gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB8, width, height, 0, gl.GL_RGB, gl.GL_UNSIGNED_BYTE,
+                            texture_image)
+            gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
 
-        texture_image = numpy.array(texture_image, dtype=np.uint8)
-        texture_image.reshape((height, width, 3))
-        gl.glBindTexture(gl.GL_TEXTURE_2D, texture)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_MIRRORED_REPEAT)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_MIRRORED_REPEAT)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
-        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB8, width, height, 0, gl.GL_RGB, gl.GL_UNSIGNED_BYTE,
-                        texture_image)
+            info(gl.glGetError())
 
-        gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
-
-
-        print(gl.glGetError())
-
-        # bind uniforms
-        self._bind_target_value(scale, "scale")
-        self._bind_target_value(offset_x, "offset_x")
-        self._bind_target_value(offset_y, "offset_y")
-        # self._bind_target_value(point_size, "point_size")
-        self._bind_projection()
+            # bind uniforms
+            self._bind_target_value(scale, "scale")
+            # self._bind_target_value(offset_x, "offset_x")
+            # self._bind_target_value(offset_y, "offset_y")
+            self._bind_target_value(gl_width, "width")
+            self._bind_target_value(gl_height, "height")
+            # self._bind_target_value(point_size, "point_size")
+            self._bind_projection()
 
         glut.glutMainLoop()
-
-
-
 
     def _bind_projection(self):
         self.view = np.eye(4, dtype=np.float32)
@@ -100,7 +101,6 @@ class Viewer:
         # glut.glutTimerFunc(int(1000 / fps), self._timer, fps)
         glut.glutPostRedisplay()
 
-
     def _init_data(self, points, colors):
         data = numpy.zeros(self.point_count, dtype=[("position", np.float32, 2)])
         data['position'] = points
@@ -122,7 +122,7 @@ class Viewer:
         # glut.glutTimerFunc(int(1000 / 60), self._timer, 60)
 
     def _init_program(self, vertex_file, fragment_file):
-        # read shaders
+        # Read shaders
         path = "./shader"
         vertex_code = read_file_data(path, vertex_file)
         fragment_code = read_file_data(path, fragment_file)
@@ -134,52 +134,52 @@ class Viewer:
 
         # TODO error handling
         self.program = gl.glCreateProgram()
-        print(gl.glGetError())
+        info(gl.glGetError())
         vertex = gl.glCreateShader(gl.GL_VERTEX_SHADER)
-        print(gl.glGetError())
+        info(gl.glGetError())
         fragment = gl.glCreateShader(gl.GL_FRAGMENT_SHADER)
-        print(gl.glGetError())
+        info(gl.glGetError())
         # Set shaders source
         gl.glShaderSource(vertex, vertex_code)
-        print(gl.glGetError())
+        info(gl.glGetError())
         gl.glShaderSource(fragment, fragment_code)
-        print(gl.glGetError())
+        info(gl.glGetError())
         # Compile shaders
         gl.glCompileShader(vertex)
-        print(gl.glGetError())
+        info(gl.glGetError())
         gl.glCompileShader(fragment)
-        print(gl.glGetError())
+        info(gl.glGetError())
 
         # We can now build and link the program
 
         gl.glAttachShader(self.program, vertex)
-        print(gl.glGetError())
+        info(gl.glGetError())
         gl.glAttachShader(self.program, fragment)
-        print(gl.glGetError())
+        info(gl.glGetError())
         gl.glLinkProgram(self.program)
-        print(gl.glGetError())
+        info(gl.glGetError())
 
         # We can not get rid of shaders, they won't be used again:
 
         gl.glDetachShader(self.program, vertex)
-        print(gl.glGetError())
+        info(gl.glGetError())
         gl.glDetachShader(self.program, fragment)
-        print(gl.glGetError())
+        info(gl.glGetError())
 
         # Finally, we make program the default program to be ran.
         # We can do it now because we'll use a single in this example:
-        print(glut.glutReportErrors())
+        info(glut.glutReportErrors())
         if gl.glGetShaderiv(vertex, gl.GL_COMPILE_STATUS) == 0:
-            print(gl.glGetShaderInfoLog(vertex))
+            info(gl.glGetShaderInfoLog(vertex))
 
         if gl.glGetShaderiv(fragment, gl.GL_COMPILE_STATUS) == 0:
-            print(gl.glGetShaderInfoLog(fragment))
+            info(gl.glGetShaderInfoLog(fragment))
 
         if gl.glGetProgramiv(self.program, gl.GL_LINK_STATUS) == 0:
-            print(gl.glGetProgramInfoLog(self.program))
+            info(gl.glGetProgramInfoLog(self.program))
 
         gl.glUseProgram(self.program)
-        print(gl.glGetError())
+        info(gl.glGetError())
 
         return self.program
 
@@ -203,8 +203,8 @@ class Viewer:
 
         gl.glEnableVertexAttribArray(loc)
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, buffer)
-
-        gl.glVertexAttribPointer(loc, len(data), gl.GL_FLOAT, False, stride, offset)
+        info('DATA LENGTH %s' % len(data))
+        gl.glVertexAttribPointer(loc, len(data[0]) * 2, gl.GL_FLOAT, False, stride, offset)
 
         # offset = ctypes.c_void_p(data.dtype["position"].itemsize)
         # loc = gl.glGetAttribLocation(self.program, "color")
@@ -216,13 +216,13 @@ class Viewer:
     # Bind Uniform:
     def _bind_target_value(self, target_value, name):
         loc = gl.glGetUniformLocation(self.program, name)
-        gl.glUniform1f(loc, target_value)
+        gl.glUniform1f(loc, np.float32(target_value))
 
     def _bind_matrix(self, matrix, name):
-        print("bind matrix: ", name)
-        location = gl.glGetUniformLocation(self.program, name)
-        print(gl.glGetError())
+        info("bind matrix: %s" % name)
+        location = gl.glGetUniformLocation(self.program, name=name)
+        info(gl.glGetError())
         if location == -1:
-            raise ValueError
+            raise ValueError('Location not found')
         gl.glUniformMatrix4fv(location, 1, False, matrix)
         # location, count, transpose, value
