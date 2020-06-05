@@ -146,9 +146,8 @@ class Viewer:
         info(gl.glGetError())
         return shader
 
-    def _init_program(self, vertex_file, fragment_file):
+    def _init_program(self, vertex_file: str, fragment_file: str, path: str = "./shader"):
         # Read shaders
-        path = "./shader"
 
         # TODO error handling
         self.program = gl.glCreateProgram()
@@ -199,13 +198,6 @@ class Viewer:
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, buffer)
         info('DATA LENGTH %s' % len(data))
         gl.glVertexAttribPointer(loc, len(data[0]) * 2, gl.GL_FLOAT, False, stride, offset)
-
-        # offset = ctypes.c_void_p(data.dtype["position"].itemsize)
-        # loc = gl.glGetAttribLocation(self.program, "color")
-
-        # gl.glEnableVertexAttribArray(loc)
-        # gl.glBindBuffer(gl.GL_ARRAY_BUFFER, buffer)
-        # gl.glVertexAttribPointer(loc, 4, gl.GL_FLOAT, False, stride, offset)
 
     # Bind Uniform:
     def _bind_target_value(self, target_value, name):
