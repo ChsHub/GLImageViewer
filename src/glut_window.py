@@ -4,9 +4,9 @@ import OpenGL.GLUT as glut
 from logger_default import Logger
 from timerpy import Timer
 
-from src.GL.program import init_GL, redraw
+from src.GL.program import GLProgram
 from src.GL.uniforms import Resizer
-
+from src.GL.texture import get_texture_image
 
 class GlutWindow(Resizer):
     point_count = 0
@@ -18,13 +18,13 @@ class GlutWindow(Resizer):
         self._init_glut(title)
 
         with Timer('INIT GL'):
-            init_GL(self, path)
+            self.program = GLProgram(self, *get_texture_image(path))
 
         glut.glutMainLoop()
 
     # GL methods:
     def _display(self):
-        redraw(self.point_count)
+        self.program.redraw()
         glut.glutSwapBuffers()
 
     def _keyboard(self, key, x, y):

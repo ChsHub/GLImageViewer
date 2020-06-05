@@ -11,7 +11,7 @@ def get_texture_image(path):
         width, height = texture_image.size
         texture_image = texture_image.convert('RGB')
         texture_image = list(texture_image.getdata())
-    return texture_image, [(0.0, 0.0), (width, 0.0), (0.0, height), (width, height)], width, height
+    return texture_image, width, height
 
 
 def bind_texture(texture_image, height, width):

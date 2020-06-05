@@ -4,34 +4,35 @@ from os.path import join, abspath
 import OpenGL.GL as gl
 
 from src.GL.buffer import bind_buffers
-from src.GL.texture import get_texture_image, bind_texture
-from src.GL.uniforms import bind_target_value
+from src.GL.texture import bind_texture
+from src.GL.uniforms import bind_target_value, Resizer
 
 
-def init_GL(self, path):
-    texture_image, points, width, height = get_texture_image(path)
+class GLProgram(Resizer):
+    def __init__(self, texture_image, width, height):
+        self.width = width
+        self.height = height
 
-    program = init_program()
-    bind_buffers(program, points)
-    bind_texture(texture_image, height, width)
-    bind_target_value(program, 1.0, "scale")
+        points = [(0.0, 0.0), (width, 0.0), (0.0, height), (width, height)]
 
-    self.width = width
-    self.height = height
-    self.program = program
-    self.point_count = len(points)
-    self.bind_size(1.0, 1.0)
+        program = init_program()
+        bind_buffers(program, points)
+        bind_texture(texture_image, height, width)
+        bind_target_value(program, 1.0, "scale")
 
+        self.program = program
+        self.point_count = len(points)
+        self.bind_size(1.0, 1.0)
 
-def redraw(point_count):
-    gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-    gl.glEnable(gl.GL_DEPTH_TEST)
-    gl.glEnable(gl.GL_PROGRAM_POINT_SIZE)
-    gl.glActiveTexture(gl.GL_TEXTURE0)
-    gl.glEnable(gl.GL_TEXTURE_2D)
-    gl.glClearColor(1.0, 1.0, 1.0, 1.0)
-    gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-    gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, point_count)
+    def redraw(self):
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+        gl.glEnable(gl.GL_DEPTH_TEST)
+        gl.glEnable(gl.GL_PROGRAM_POINT_SIZE)
+        gl.glActiveTexture(gl.GL_TEXTURE0)
+        gl.glEnable(gl.GL_TEXTURE_2D)
+        gl.glClearColor(1.0, 1.0, 1.0, 1.0)
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+        gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, self.point_count)
 
 
 def _get_shader(path, file, shader_type, program):
