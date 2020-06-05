@@ -1,10 +1,6 @@
 # version 460
 // constant for all vertices
 uniform float scale;
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
-
 uniform float width;
 uniform float height;
 
@@ -24,16 +20,15 @@ void main()
     }
     if(position[1] > 0.0)
     {
-        temp[1] = 1.0;
-        temp2[1] = 1.0;
-    }else{
         temp[1] = 0.0;
+        temp2[1] = height;
+    }else{
+        temp[1] = 1.0;
         temp2[1] = -height;
     }
 
-    texture_point = vec2(temp[0], 1.0 - temp[1]);
-
-    gl_Position =  projection * view * model *vec4(scale * (temp2), 0.0, 1.0);
+    texture_point = vec2(temp[0], temp[1]);
+    gl_Position =  vec4(scale * (temp2), 0.0, 1.0);
 
 
 }
