@@ -135,10 +135,15 @@ class Viewer:
 
         shader = gl.glCreateShader(shader_type)
         info(gl.glGetError())
-
+        # Link
         gl.glShaderSource(shader, shader_code)
         info(gl.glGetError())
-
+        # Compile
+        gl.glCompileShader(shader)
+        info(gl.glGetError())
+        # Attach
+        gl.glAttachShader(self.program, shader)
+        info(gl.glGetError())
         return shader
 
     def _init_program(self, vertex_file, fragment_file):
@@ -148,41 +153,21 @@ class Viewer:
         # TODO error handling
         self.program = gl.glCreateProgram()
         info(gl.glGetError())
-
         # Set shaders source
         vertex = self._get_shader(path, vertex_file, gl.GL_VERTEX_SHADER)
         fragment = self._get_shader(path, fragment_file, gl.GL_FRAGMENT_SHADER)
-
-        # Compile shaders
-        gl.glCompileShader(vertex)
-        info(gl.glGetError())
-        gl.glCompileShader(fragment)
-        info(gl.glGetError())
-
-        # We can now build and link the program
-
-        gl.glAttachShader(self.program, vertex)
-        info(gl.glGetError())
-        gl.glAttachShader(self.program, fragment)
-        info(gl.glGetError())
         gl.glLinkProgram(self.program)
         info(gl.glGetError())
 
-        # We can not get rid of shaders, they won't be used again:
-
-        gl.glDetachShader(self.program, vertex)
-        info(gl.glGetError())
-        gl.glDetachShader(self.program, fragment)
-        info(gl.glGetError())
-
-        # Finally, we make program the default program to be ran.
-        # We can do it now because we'll use a single in this example:
-        info(glut.glutReportErrors())
-        if gl.glGetShaderiv(vertex, gl.GL_COMPILE_STATUS) == 0:
-            info(gl.glGetShaderInfoLog(vertex))
-
-        if gl.glGetShaderiv(fragment, gl.GL_COMPILE_STATUS) == 0:
-            info(gl.glGetShaderInfoLog(fragment))
+        # We can now get rid of shaders, they won't be used again:
+        for shader in [vertex, fragment]:
+            gl.glDetachShader(self.program, shader)
+            info(gl.glGetError())
+            # Finally, we make program the default program to be ran.
+            # We can do it now because we'll use a single in this example:
+            info(glut.glutReportErrors())
+            if gl.glGetShaderiv(shader, gl.GL_COMPILE_STATUS) == 0:
+                info(gl.glGetShaderInfoLog(shader))
 
         if gl.glGetProgramiv(self.program, gl.GL_LINK_STATUS) == 0:
             info(gl.glGetProgramInfoLog(self.program))
