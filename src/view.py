@@ -93,8 +93,6 @@ class Viewer:
         gl.glViewport(0, 0, width, height)
 
         self._bind_size(width, height)
-        # self.projection = perspective(45.0, width / float(height), 2.0, 10.0)
-        # self._bind_matrix(self.projection, 'projection')
 
     def _keyboard(self, key, x, y):
         if key == '\033':
@@ -111,14 +109,12 @@ class Viewer:
             raise TypeError
 
         glut.glutInit()
-        glut.glutInitDisplayMode(glut.GLUT_DOUBLE | glut.GLUT_RGBA)  # | glut.GLUT_DEPTH)
-        # gl.glEnable(gl.GL_DEPTH_TEST)
+        glut.glutInitDisplayMode(glut.GLUT_DOUBLE | glut.GLUT_RGBA)
         glut.glutCreateWindow(time)
         glut.glutReshapeWindow(700, 700)
         glut.glutReshapeFunc(self._set_window_size)
         glut.glutDisplayFunc(self._display)
         glut.glutKeyboardFunc(self._keyboard)
-        # glut.glutTimerFunc(int(1000 / 60), self._timer, 60)
 
     def _get_shader(self, path, file, shader_type):
         """
@@ -211,4 +207,3 @@ class Viewer:
         if location == -1:
             raise ValueError('Location not found')
         gl.glUniformMatrix4fv(location, 1, False, matrix)
-        # location, count, transpose, value
