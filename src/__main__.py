@@ -10,7 +10,7 @@ def main(path):
         width, height = texture_image.size
         texture_image = texture_image.convert('RGB')
         texture_image = list(texture_image.getdata())
-    with Logger() as log:
+    with Logger():
         Viewer(points=[(0.0, 0.0), (width, 0.0), (0.0, height), (width, height)],
                colors=[],
                scale=1,

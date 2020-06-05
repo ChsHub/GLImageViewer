@@ -1,15 +1,13 @@
 import ctypes
 import sys
 from logging import info
+from os.path import join
 
 import OpenGL.GL as gl
 import OpenGL.GLUT as glut
 import numpy
 from numpy.lib.arraypad import np
-from utility.os_interface import read_file_data
-from utility.timer import Timer
-
-from src.transforms import perspective, translate, rotate
+from timerpy import Timer
 
 
 class Viewer:
@@ -18,8 +16,11 @@ class Viewer:
     program = None
     phi, theta = 0, 0
 
-    def __init__(self, points, colors, scale, gl_width, gl_height, vertex_file, fragment_file, title,
+    def __init__(self, points, colors, scale, vertex_file, fragment_file, title,
                  texture_image, width, height):
+
+        self.width = width
+        self.height = height
 
         with Timer('INIT GL'):
             self.point_count = len(points)
@@ -51,24 +52,22 @@ class Viewer:
 
             # bind uniforms
             self._bind_target_value(scale, "scale")
-            # self._bind_target_value(offset_x, "offset_x")
-            # self._bind_target_value(offset_y, "offset_y")
-            self._bind_target_value(gl_width, "width")
-            self._bind_target_value(gl_height, "height")
-            # self._bind_target_value(point_size, "point_size")
-            self._bind_projection()
+            self._bind_size(1.0, 1.0)
 
         glut.glutMainLoop()
 
-    def _bind_projection(self):
-        self.view = np.eye(4, dtype=np.float32)
-        self.model = np.eye(4, dtype=np.float32)
-        self.projection = np.eye(4, dtype=np.float32)
-        translate(self.view, 0, 0, -5)
+    def _bind_size(self, width, height):
 
-        self._bind_matrix(self.model, 'model')
-        self._bind_matrix(self.view, 'view')
-        self._bind_matrix(self.projection, 'projection')
+        gl_width = self.width / max(self.height, self.width)
+        gl_height = self.height / max(self.height, self.width)
+
+        if self.width > self.height:
+            gl_height *= (width / height)
+        else:
+            gl_width *= (height / width)
+
+        self._bind_target_value(gl_width, "width")
+        self._bind_target_value(gl_height, "height")
 
     # GL methods:
     def _display(self):
@@ -83,23 +82,23 @@ class Viewer:
         glut.glutSwapBuffers()
 
     def _set_window_size(self, width, height):
+        """
+        Function is called by GL, when window is resized
+        :param width:
+        :param height:
+        :return:
+        """
+
+        print(width, height)
         gl.glViewport(0, 0, width, height)
-        self.projection = perspective(45.0, width / float(height), 2.0, 10.0)
-        self._bind_matrix(self.projection, 'projection')
+
+        self._bind_size(width, height)
+        # self.projection = perspective(45.0, width / float(height), 2.0, 10.0)
+        # self._bind_matrix(self.projection, 'projection')
 
     def _keyboard(self, key, x, y):
         if key == '\033':
             sys.exit()
-
-    def _timer(self, fps):
-        self.theta += .5
-        self.phi += .5
-        self.model = np.eye(4, dtype=np.float32)
-        # rotate(self.model, self.theta, 1, 0, 0)
-        rotate(self.model, self.phi, 0, 1, 0)
-        self._bind_matrix(self.model, 'model')
-        # glut.glutTimerFunc(int(1000 / fps), self._timer, fps)
-        glut.glutPostRedisplay()
 
     def _init_data(self, points, colors):
         data = numpy.zeros(self.point_count, dtype=[("position", np.float32, 2)])
@@ -121,29 +120,33 @@ class Viewer:
         glut.glutKeyboardFunc(self._keyboard)
         # glut.glutTimerFunc(int(1000 / 60), self._timer, 60)
 
+    def _read_file_data(self, path, file, shader_type):
+
+        with open(join(path, file), mode='r') as f:
+            shader_code = f.read()
+        if not shader_code:
+            raise ValueError
+
+        shader = gl.glCreateShader(shader_type)
+        info(gl.glGetError())
+
+        gl.glShaderSource(shader, shader_code)
+        info(gl.glGetError())
+
+        return shader
+
     def _init_program(self, vertex_file, fragment_file):
         # Read shaders
         path = "./shader"
-        vertex_code = read_file_data(path, vertex_file)
-        fragment_code = read_file_data(path, fragment_file)
-
-        if not vertex_code:
-            raise ValueError
-        if not fragment_code:
-            raise ValueError
 
         # TODO error handling
         self.program = gl.glCreateProgram()
         info(gl.glGetError())
-        vertex = gl.glCreateShader(gl.GL_VERTEX_SHADER)
-        info(gl.glGetError())
-        fragment = gl.glCreateShader(gl.GL_FRAGMENT_SHADER)
-        info(gl.glGetError())
+
         # Set shaders source
-        gl.glShaderSource(vertex, vertex_code)
-        info(gl.glGetError())
-        gl.glShaderSource(fragment, fragment_code)
-        info(gl.glGetError())
+        vertex = self._read_file_data(path, vertex_file, gl.GL_VERTEX_SHADER)
+        fragment = self._read_file_data(path, fragment_file, gl.GL_FRAGMENT_SHADER)
+
         # Compile shaders
         gl.glCompileShader(vertex)
         info(gl.glGetError())
