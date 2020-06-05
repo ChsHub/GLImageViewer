@@ -1,13 +1,37 @@
-import ctypes
-import sys
 from logging import info
-from os.path import join
+from os.path import join, abspath
 
 import OpenGL.GL as gl
-import OpenGL.GLUT as glut
-import numpy
-from numpy.lib.arraypad import np
-from timerpy import Timer
+
+from src.GL.buffer import bind_buffers
+from src.GL.texture import get_texture_image, bind_texture
+from src.GL.uniforms import bind_target_value
+
+
+def init_GL(self, path):
+    texture_image, points, width, height = get_texture_image(path)
+
+    program = init_program()
+    bind_buffers(program, points)
+    bind_texture(texture_image, height, width)
+    bind_target_value(program, 1.0, "scale")
+
+    self.width = width
+    self.height = height
+    self.program = program
+    self.point_count = len(points)
+    self.bind_size(1.0, 1.0)
+
+
+def redraw(point_count):
+    gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+    gl.glEnable(gl.GL_DEPTH_TEST)
+    gl.glEnable(gl.GL_PROGRAM_POINT_SIZE)
+    gl.glActiveTexture(gl.GL_TEXTURE0)
+    gl.glEnable(gl.GL_TEXTURE_2D)
+    gl.glClearColor(1.0, 1.0, 1.0, 1.0)
+    gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+    gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, point_count)
 
 
 def _get_shader(path, file, shader_type, program):
@@ -18,7 +42,7 @@ def _get_shader(path, file, shader_type, program):
     :param shader_type: GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
     :return: glShader
     """
-    with open(join(path, file), mode='r') as f:
+    with open(abspath(join(path, file)), mode='r') as f:
         shader_code = f.read()
     if not shader_code:
         raise ValueError
@@ -39,13 +63,13 @@ def _get_shader(path, file, shader_type, program):
 
 def init_program(vertex_file: str = "vertex3d_mod.glsl", fragment_file: str = "fragment1.glsl", path: str = "./shader"):
     # Read shaders
-
     # TODO error handling
     if not gl.glCreateProgram:
         raise ImportError
 
     program = gl.glCreateProgram()
     info(gl.glGetError())
+
     # Set shaders source
     vertex = _get_shader(path, vertex_file, gl.GL_VERTEX_SHADER, program)
     fragment = _get_shader(path, fragment_file, gl.GL_FRAGMENT_SHADER, program)
@@ -58,7 +82,6 @@ def init_program(vertex_file: str = "vertex3d_mod.glsl", fragment_file: str = "f
         info(gl.glGetError())
         # Finally, we make program the default program to be ran.
         # We can do it now because we'll use a single in this example:
-        info(glut.glutReportErrors())
         if gl.glGetShaderiv(shader, gl.GL_COMPILE_STATUS) == 0:
             info(gl.glGetShaderInfoLog(shader))
 
