@@ -8,12 +8,12 @@ with open("README.md", "r") as f:
 setup(
     name='GlImageViewer',
     version=__version__,
-    description=long_description.split('\n')[1], # First line of description
+    description=long_description.split('\n')[1],  # First line of description
     long_description=long_description,
     long_description_content_type="text/markdown",
     author='ChsHub',
     packages=['src'],
     license='MIT License',
     classifiers=['Programming Language :: Python :: 3'],
-    install_requires=['PyOpenGL']
+    install_requires=['PyOpenGL'] # https://www.lfd.uci.edu/~gohlke/pythonlibs/#pyopengl
 )

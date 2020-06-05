@@ -9,6 +9,8 @@ import numpy
 from numpy.lib.arraypad import np
 from timerpy import Timer
 
+from src.program import init_program
+
 
 class Viewer:
     point_count = 0
@@ -22,11 +24,12 @@ class Viewer:
         self.width = width
         self.height = height
 
+
         with Timer('INIT GL'):
             self.point_count = len(points)
 
             self._init_glut(title)
-            self.program = self._init_program(vertex_file, fragment_file)
+            self.program = init_program(vertex_file, fragment_file)
 
             # read data
             data = self._init_data(points, colors)
@@ -116,61 +119,7 @@ class Viewer:
         glut.glutDisplayFunc(self._display)
         glut.glutKeyboardFunc(self._keyboard)
 
-    def _get_shader(self, path, file, shader_type):
-        """
-        Create the shader and link shader source code
-        :param path: Shader code path
-        :param file: Shader code file
-        :param shader_type: GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
-        :return: glShader
-        """
-        with open(join(path, file), mode='r') as f:
-            shader_code = f.read()
-        if not shader_code:
-            raise ValueError
 
-        shader = gl.glCreateShader(shader_type)
-        info(gl.glGetError())
-        # Link
-        gl.glShaderSource(shader, shader_code)
-        info(gl.glGetError())
-        # Compile
-        gl.glCompileShader(shader)
-        info(gl.glGetError())
-        # Attach
-        gl.glAttachShader(self.program, shader)
-        info(gl.glGetError())
-        return shader
-
-    def _init_program(self, vertex_file: str, fragment_file: str, path: str = "./shader"):
-        # Read shaders
-
-        # TODO error handling
-        self.program = gl.glCreateProgram()
-        info(gl.glGetError())
-        # Set shaders source
-        vertex = self._get_shader(path, vertex_file, gl.GL_VERTEX_SHADER)
-        fragment = self._get_shader(path, fragment_file, gl.GL_FRAGMENT_SHADER)
-        gl.glLinkProgram(self.program)
-        info(gl.glGetError())
-
-        # We can now get rid of shaders, they won't be used again:
-        for shader in [vertex, fragment]:
-            gl.glDetachShader(self.program, shader)
-            info(gl.glGetError())
-            # Finally, we make program the default program to be ran.
-            # We can do it now because we'll use a single in this example:
-            info(glut.glutReportErrors())
-            if gl.glGetShaderiv(shader, gl.GL_COMPILE_STATUS) == 0:
-                info(gl.glGetShaderInfoLog(shader))
-
-        if gl.glGetProgramiv(self.program, gl.GL_LINK_STATUS) == 0:
-            info(gl.glGetProgramInfoLog(self.program))
-
-        gl.glUseProgram(self.program)
-        info(gl.glGetError())
-
-        return self.program
 
     def _build_buffer(self, data):
         # Request a buffer slot from GPU
