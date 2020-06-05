@@ -120,8 +120,14 @@ class Viewer:
         glut.glutKeyboardFunc(self._keyboard)
         # glut.glutTimerFunc(int(1000 / 60), self._timer, 60)
 
-    def _read_file_data(self, path, file, shader_type):
-
+    def _get_shader(self, path, file, shader_type):
+        """
+        Create the shader and link shader source code
+        :param path: Shader code path
+        :param file: Shader code file
+        :param shader_type: GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
+        :return: glShader
+        """
         with open(join(path, file), mode='r') as f:
             shader_code = f.read()
         if not shader_code:
@@ -144,8 +150,8 @@ class Viewer:
         info(gl.glGetError())
 
         # Set shaders source
-        vertex = self._read_file_data(path, vertex_file, gl.GL_VERTEX_SHADER)
-        fragment = self._read_file_data(path, fragment_file, gl.GL_FRAGMENT_SHADER)
+        vertex = self._get_shader(path, vertex_file, gl.GL_VERTEX_SHADER)
+        fragment = self._get_shader(path, fragment_file, gl.GL_FRAGMENT_SHADER)
 
         # Compile shaders
         gl.glCompileShader(vertex)
