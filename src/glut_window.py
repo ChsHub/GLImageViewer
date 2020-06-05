@@ -1,6 +1,7 @@
 import sys
 
 import OpenGL.GLUT as glut
+from logger_default import Logger
 from timerpy import Timer
 
 from src.GL.program import init_GL, redraw
@@ -42,3 +43,9 @@ class GlutWindow(Resizer):
         glut.glutReshapeFunc(self.set_window_size)
         glut.glutDisplayFunc(self._display)
         glut.glutKeyboardFunc(self._keyboard)
+
+
+if __name__ == '__main__':
+    path = input('INPUT IMAGE PATH: ').strip('"')
+    with Logger():
+        GlutWindow(title=b'Title', path=path)
